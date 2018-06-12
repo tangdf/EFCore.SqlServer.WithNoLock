@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,15 +14,14 @@ namespace EFCore.SqlServer.WithNoLock.UnitTest
 {
     public class SampleDbContext : DbContext
     {
+
         public SampleDbContext()
         {
-        }
-
-        public SampleDbContext(ITestOutputHelper testOutputHelper)
-        {
-            var serviceProvider = this.GetInfrastructure();
-            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-            loggerFactory.AddProvider(new MyLoggerProvider(testOutputHelper));
+            if (LogMessages == null)
+            {
+                LogMessages = new List<string>();
+                this.GetService<ILoggerFactory>().AddProvider(new MyLoggerProvider());
+            }
         }
 
         public virtual DbSet<Category> Categories { get; set; }
@@ -34,7 +34,7 @@ namespace EFCore.SqlServer.WithNoLock.UnitTest
                 DataSource = "10.0.2.229",
                 InitialCatalog = "Heap_Record",
                 UserID = "sa",
-                Password = ""
+                Password = "w1!"
             };
 
             optionsBuilder.UseSqlServer(sqlConnectionStringBuilder.ConnectionString);
@@ -50,7 +50,40 @@ namespace EFCore.SqlServer.WithNoLock.UnitTest
             entityTypeBuilder.ToTable("Category");
             entityTypeBuilder.HasKey(e => e.CategoryID);
             entityTypeBuilder.Property(e => e.CategoryID);
-       
+        }
+
+        public override int SaveChanges()
+        {
+            LogMessages.Clear();
+
+            return base.SaveChanges();
+        }
+        public static IList<string> LogMessages;
+
+        private class MyLoggerProvider : ILoggerProvider
+        {
+            public ILogger CreateLogger(string categoryName) => new SampleLogger();
+
+            public void Dispose() { }
+
+            private class SampleLogger : ILogger
+            {
+                public bool IsEnabled(LogLevel logLevel) => true;
+
+                public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
+                    Func<TState, Exception, string> formatter)
+                {
+                    if (eventId.Id == RelationalEventId.CommandExecuting.Id)
+                    {
+                        var message = formatter(state, exception);
+                       
+                         LogMessages.Add(message);
+      
+                    }
+                }
+
+                public IDisposable BeginScope<TState>(TState state) => null;
+            }
         }
     }
 }
