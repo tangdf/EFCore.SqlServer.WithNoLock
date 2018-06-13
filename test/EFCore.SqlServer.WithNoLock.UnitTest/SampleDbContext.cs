@@ -38,7 +38,7 @@ namespace EFCore.SqlServer.WithNoLock.UnitTest
             };
 
             optionsBuilder.UseSqlServer(sqlConnectionStringBuilder.ConnectionString);
-            optionsBuilder.UseSqlServerWithNoLock();
+            optionsBuilder.EnableSqlServerWithNoLock();
 
             base.OnConfiguring(optionsBuilder);
         }

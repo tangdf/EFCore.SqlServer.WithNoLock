@@ -9,7 +9,7 @@ namespace Microsoft.EntityFrameworkCore
 {
     public static class SqlServerDbContextOptionsExtensions
     {
-        public static DbContextOptionsBuilder UseSqlServerWithNoLock(this DbContextOptionsBuilder optionsBuilder)
+        public static DbContextOptionsBuilder EnableSqlServerWithNoLock(this DbContextOptionsBuilder optionsBuilder)
         {
             var sqlServerOptionsExtension = optionsBuilder.Options.FindExtension<SqlServerOptionsExtension>();
             if (sqlServerOptionsExtension == null)
